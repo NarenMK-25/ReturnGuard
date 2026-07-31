@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReturnGuard - Never Miss a Return Deadline</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        h1 { margin-bottom: 0.2rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            color: var(--text);
+            padding: 0.75rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+        }
+        button {
+            background: var(--accent);
+            color: #0f172a;
+            font-weight: 600;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .item-list { display: flex; flex-direction: column; gap: 1rem; }
+        .item-card {
+            background: var(--card);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 6px solid var(--success);
+        }
+        .item-card.warning { border-left-color: var(--warning); }
+        .item-card.urgent { border-left-color: var(--danger); }
+        .item-info h3 { margin: 0 0 0.25rem 0; font-size: 1.1rem; }
+        .item-info p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
+        .badge {
+            background: #334155;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .days-left { text-align: right; }
+        .days-left .number { font-size: 1.5rem; font-weight: bold; }
+        .days-left .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <h1>🛡️ ReturnGuard</h1>
+    <p class="subtitle">AI-Powered Online Purchase Return Window Tracker</p>
+
+    <div class="card">
+        <h3>Add Purchase Confirmation</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0;">Paste an order confirmation email or receipt text below. Our AI will extract the item, retailer, and return deadline.</p>
+        <textarea id="emailText" placeholder="Example: Thank you for your order from Target! You purchased Sony Headphones for $129.99 on Oct 24..."></textarea>
+        <button id="submitBtn" onclick="submitItem()">Extract & Track Window</button>
+    </div>
+
+    <h3>Active Return Windows</h3>
+    <div id="itemList" class="item-list">
+        <p style="color: #94a3b8;">Loading tracked items...</p>
+    </div>
+
+    <script>
+        // PASTE YOUR API ENDPOINT URL BELOW INSIDE THE QUOTES:
+        const API_URL = "https://8v1d1j9on3.execute-api.us-west-2.amazonaws.com/items";
+
+        async function loadItems() {
+            try {
+                const res = await fetch(API_URL);
+                const items = await res.json();
+                const list = document.getElementById('itemList');
+                list.innerHTML = '';
+
+                if (items.length === 0) {
+                    list.innerHTML = '<p style="color: #94a3b8;">No active returns tracked. Paste an email above!</p>';
+                    return;
+                }
+
+                const today = new Date();
+                today.setHours(0,0,0,0);
+
+                items.forEach(item => {
+                    const returnDate = new Date(item.returnByDate);
+                    const diffTime = returnDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    let severity = '';
+                    if (diffDays <= 3) severity = 'urgent';
+                    else if (diffDays <= 7) severity = 'warning';
+
+                    const el = document.createElement('div');
+                    el.className = `item-card ${severity}`;
+                    el.innerHTML = `
+                        <div class="item-info">
+                            <h3>${item.itemName} <span class="badge">${item.retailer}</span></h3>
+                            <p>Price: ${item.price} • Purchased: ${item.purchaseDate} • Method: ${item.extractionMethod}</p>
+                        </div>
+                        <div class="days-left">
+                            <div class="number" style="color: ${diffDays <= 3 ? '#ef4444' : '#f8fafc'}">${diffDays}</div>
+                            <div class="label">Days Left</div>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            } catch (err) {
+                document.getElementById('itemList').innerHTML = '<p style="color: #ef4444;">Failed to load items. Check your API Gateway URL.</p>';
+            }
+        }
+
+        async function submitItem() {
+            const btn = document.getElementById('submitBtn');
+            const text = document.getElementById('emailText').value.trim();
+            if (!text) return;
+
+            btn.disabled = true;
+            btn.innerText = "Extracting with AI...";
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                document.getElementById('emailText').value = '';
+                await loadItems();
+            } catch (err) {
+                alert("Error submitting item. Check console for details.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Extract & Track Window";
+            }
+        }
+
+        loadItems();
+    </script>
+</body>
+</html>
