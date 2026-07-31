@@ -1,6 +1,3 @@
-Here is the clean, complete, single-file **`README.md`** ready to copy and paste directly into your GitHub repository:
-
-```markdown
 # 🛡️ ReturnGuard — AI-Powered Return Window Tracker & Auto-Alert System
 
 [![AWS Serverless](https://img.shields.io/badge/AWS-Serverless-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
