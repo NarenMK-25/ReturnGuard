@@ -99,7 +99,7 @@ ReturnGuard/
 Clone the repository and run the guided SAM deployment:
 
 ```bash
-git clone [https://github.com/YOUR_GITHUB_USERNAME/ReturnGuard.git](https://github.com/YOUR_GITHUB_USERNAME/ReturnGuard.git)
+git clone [https://github.com/NarenMK-25/ReturnGuard.git](https://github.com/NarenMK-25/ReturnGuard.git)
 cd ReturnGuard
 
 # Build Python Lambda packages
@@ -163,9 +163,5 @@ During development, I encountered an AWS account-level restriction (`ValidationE
 ## 📝 License
 
 This project is open-source and licensed under the **MIT License**.
-
-```
-
-> **Reminder:** Before saving, replace `YOUR_GITHUB_USERNAME` in the repository URL with your actual GitHub username!
 
 ```
